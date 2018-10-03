@@ -8,6 +8,8 @@ build=$(cd "$1/" && pwd)
 cache=$(cd "$2/" && pwd)
 env_dir=$(cd "$3/" && pwd)
 
+source "${build}/.env"
+
 for key in SENTRY_AUTH_TOKEN SENTRY_ORG SENTRY_PROJECT; do
     [[ -f "${env_dir}/${key}" ]] && export "$key=$(cat "${env_dir}/${key}")"
     [[ -z "${!key}" ]] && echo "-----> ${key} is missing or empty: unable to continue." && exit 1
@@ -42,7 +44,7 @@ curl -sSf "${API}/releases/${SOURCE_VERSION}/files/" \
      > "$files"
 
 # Upload the sourcemaps
-cd "${build}/"
+cd "${build}/client/dist/"
 
 for map in $(find . -name '*.js.map' -not -path './node_modules/*' -not -path './.heroku/*' | cut -c 3-); do
     sum=$(sha1sum "./${map}" | cut -c -40)
@@ -83,6 +85,8 @@ for map in $(find . -name '*.js.map' -not -path './node_modules/*' -not -path '.
     else
         echo "       ${map} is up-to-date"
     fi
+    # destroy the source map files, we don't want them visible on production
+    rm "${map}"
 done
 
 rm "${files}"
